@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.webrtc.ecl.ntt.com/skyway-latest.js"></script>
+    <title>練習</title>
+</head>
+<body>
+    <video id="my-video" width="400px" autoplay muted playsinline></video>
+    <p id="my-id"></p>
+
+    <textarea id="their-id"></textarea>
+    <button id="make-call">発信</button>
+    <video id="their-video" width="400px" autoplay muted playsinline></video>
+
+    <script>
+        let localStream;
+
+        navigator.mediaDevices.getUserMedia({video: true, audio: true})
+          .then(stream => {
+              const videoElm = document.getElementById('my-video')
+              videoElm.srcObject = stream;
+              videoElm.play();
+              localStream = stream
+          }).catch(error => {
+              console.log('mediaDevice.getUserMedia() error:', error);
+              return;
+          })
+
+        const peer = new Peer({
+                key: '0bb75c4b-1d90-4de4-ab7e-bafbf0d7f2d3',
+                debug: 3,
+            });
+
+            var room = "";
+
+            peer.on('open', id  => {
+                console.log(id);
+                room = peer.joinRoom('mesh_text_' + '123456789')
+                document.getElementById('my-id').textContent = peer.id;
+            });
+
+            peer.on('error', err => console.log(err));
+
+            peer.on('call', mediaConnection => {
+                mediaConnection.answer(localStream);
+                setEventListener(mediaConnection);
+            });
+
+            peer.on('error', err => {
+                alert(err.message);
+            });
+
+            peer.on('close', () => {
+                alert('通信が切断しました。');
+            });
+        
+        document.getElementById('make-call').onclick = () => {
+            const theirID = document.getElementById('their-id').value;
+            const mediaConnection = peer.call(theirID, localStream);
+            setEventListener(mediaConnection);
+        }
+
+        const setEventListener = mediaConnection => {
+            mediaConnection.on('stream', stream => {
+                const videoElm = document.getElementById('their-video')
+                videoElm.srcObject = stream;
+                videoElm.play();
+            });
+        }
+
+
+    </script>
+</body>
+</html>
